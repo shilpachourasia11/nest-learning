@@ -31,7 +31,7 @@ export class CatsController {
   @Get()
   async findAll() {
     try {
-      await this.catsService.findAll();
+      return await this.catsService.findAll();
     } catch (error) {
       throw new HttpException(
         {

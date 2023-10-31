@@ -4,7 +4,7 @@ import { UpdateCatDto } from './dto/update-cat.dto';
 import { Cat } from './schemas/cat.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-
+import { redisClient } from '../../common/redis/redis';
 @Injectable()
 export class CatsService {
   constructor(@InjectModel(Cat.name) private catModel: Model<Cat>) {}
@@ -15,7 +15,21 @@ export class CatsService {
   }
 
   async findAll(): Promise<Cat[]> {
-    return this.catModel.find().exec();
+    const checkCacheValue = await redisClient.get('cats');
+    if (checkCacheValue) {
+      return JSON.parse(checkCacheValue);
+    } else {
+      const data = await this.catModel.find();
+      redisClient
+        .set('cats', JSON.stringify(data))
+        .then((res) => {
+          console.log('res', res);
+        })
+        .catch((err) => {
+          console.log('err', err);
+        });
+      return data;
+    }
   }
 
   // code before mongo was added
